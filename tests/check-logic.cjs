@@ -1,0 +1,21 @@
+/** Tests de reglas puras de datos DEMO. No certifican seguridad clínica o jurídica. */
+const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),Module=require('node:module'),ts=require('typescript');
+const src=fs.readFileSync(path.join(__dirname,'..','src','lib','demo.ts'),'utf8');
+const transpiled=ts.transpileModule(src,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const m=new Module(path.join(__dirname,'..','src','lib','demo.js'));m.filename='demo.js';m.paths=module.paths;m._compile(transpiled,m.filename);
+const {initialState,reducer,sumMass,verifiedLocal,percentLocal}=m.exports;
+let s=initialState();const run=a=>s=reducer(s,a);
+assert.equal(s.suppliers.length,25);assert.equal(verifiedLocal(s.suppliers),19);assert.equal(percentLocal(s.suppliers),76);
+assert.equal(sumMass(s.waste,'campaña'),153);assert.equal(sumMass(s.waste,'proveedor'),82);
+run({type:'ADVANCE_WASTE',id:'DEMO-GEN02'});assert.equal(sumMass(s.waste,'campaña'),153,'retirada no resta generación');
+run({type:'VERIFY_SUPPLIER',id:'DEMO-PR20'});assert.equal(percentLocal(s.suppliers),80);
+run({type:'SELECT_PERSON',id:'DEMO-P002'});run({type:'ADD_APPOINTMENT',person:'DEMO-P002',slot:'13 oct 2026 · 09:00'});
+assert.equal(s.appointments.length,2);run({type:'ADD_APPOINTMENT',person:'DEMO-P002',slot:'13 oct 2026 · 09:00'});assert.equal(s.appointments.length,2,'no duplicar cita');
+run({type:'REBOOK',person:'DEMO-P002',slot:'12 oct 2026 · 10:00'});assert.equal(s.appointments.length,2,'no cancelar cita al fracasar');
+run({type:'REBOOK',person:'DEMO-P002',slot:'13 oct 2026 · 10:30'});assert.equal(s.appointments.length,3);assert.equal(s.appointments.filter(a=>a.person==='DEMO-P002'&&a.status==='confirmada').length,1);
+run({type:'ADD_APPLICATION',person:'DEMO-P002',operation:'DEMO-OP006-002'});run({type:'ADD_APPLICATION',person:'DEMO-P002',operation:'DEMO-OP006-002'});assert.equal(s.applications.length,1,'reintentos no duplican aplicación');
+run({type:'ADD_REPORT',person:'DEMO-P003',description:'Orientación ficticia'});assert.equal(s.reports[0].state,'recibido');
+run({type:'ADVANCE_REPORT',id:s.reports[0].id,state:'en revisión'});assert.equal(s.reports[0].state,'en revisión');
+run({type:'TOGGLE_OFFLINE'});run({type:'QUEUE_ACTION',label:'DEMO-OP004'});assert.equal(s.offline,true);assert.equal(s.queue.length,1);
+run({type:'MAKE_CONFLICT'});assert.equal(s.conflict,true);run({type:'TOGGLE_OFFLINE'});run({type:'RECONCILE'});assert.equal(s.queue.length,0);
+console.log('PASS: proveedor 19→20, residuos 153 kg, citas, no duplicados, reporte y contingencia simulada.');
