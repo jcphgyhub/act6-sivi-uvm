@@ -4,7 +4,7 @@ import type {AppProps} from '@/src/components/AppShell';
 import {Card,Note,Tag,Action,ViewHeader,SimpleTable,Hint} from '@/src/components/UI';
 import type {Module} from '@/src/lib/demo';
 
-// Prefijo de recursos públicos: vacío en local, /act6-sivi-uvm al publicar.
+// Prefijo  de recursos públicos: vacío en local, /act6-sivi-uvm al publicar.
 const publicBase = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 type Topic={n:number;group:'Inclusión y accesibilidad'|'Circularidad y colaboración'|'Comportamiento'|'Herramientas';label:string;origin:string;area:string;decision:string;screen:Module;status:'Propuesto'|'Referencia metodológica'|'Por validar'};
